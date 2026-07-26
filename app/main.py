@@ -1,3 +1,5 @@
+import logging
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,13 +11,18 @@ from app.routers import (
     articles_router,
     feedback_router,
 )
+from app.scheduler import start_scheduler, stop_scheduler
 from app.services.llm import LLMGateway
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(title="Smart Stream", lifespan=lifespan)
