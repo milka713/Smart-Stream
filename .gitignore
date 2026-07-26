@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+*.db
+*.sqlite3
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.qwen/
+FACTS.md
+QWEN.md
