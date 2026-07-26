@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -13,7 +13,16 @@ class TopicCreate(BaseModel):
     user_id: int = 1
 
 
-@router.post("/", status_code=201)
+class TopicResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    user_id: int
+    active: bool
+
+
+@router.post("/", status_code=201, response_model=TopicResponse)
 def create_topic(data: TopicCreate, db: Session = Depends(get_db)):
     repo = TopicBranchRepository(db)
     topic = repo.create(name=data.name, user_id=data.user_id)
@@ -21,7 +30,7 @@ def create_topic(data: TopicCreate, db: Session = Depends(get_db)):
     return topic
 
 
-@router.get("/")
+@router.get("/", response_model=list[TopicResponse])
 def list_topics(user_id: int | None = None, db: Session = Depends(get_db)):
     repo = TopicBranchRepository(db)
     topics = repo.get_all_active()

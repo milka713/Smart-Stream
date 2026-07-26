@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -14,7 +16,18 @@ class SourceCreate(BaseModel):
     interval_min: int = 15
 
 
-@router.post("/", status_code=201)
+class SourceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    url: str
+    name: str | None
+    interval_min: int
+    active: bool
+    last_fetched: datetime | None = None
+
+
+@router.post("/", status_code=201, response_model=SourceResponse)
 def create_source(data: SourceCreate, db: Session = Depends(get_db)):
     repo = SourceRepository(db)
     source = repo.create(url=data.url, name=data.name, interval_min=data.interval_min)
@@ -22,7 +35,7 @@ def create_source(data: SourceCreate, db: Session = Depends(get_db)):
     return source
 
 
-@router.get("/")
+@router.get("/", response_model=list[SourceResponse])
 def list_sources(active_only: bool = False, db: Session = Depends(get_db)):
     repo = SourceRepository(db)
     return repo.get_all(active_only=active_only)
