@@ -2,7 +2,7 @@ import logging
 import re
 from datetime import datetime
 from time import mktime
-from typing import Dict
+from typing import Any, Dict
 
 import feedparser
 import httpx
@@ -18,7 +18,7 @@ class RSSFetcher:
     def __init__(self, timeout: int = 30):
         self._timeout = timeout
 
-    def _fetch_feed(self, url: str) -> feedparser.Feed:
+    def _fetch_feed(self, url: str) -> Any:
         try:
             response = httpx.get(url, timeout=self._timeout, follow_redirects=True)
             response.raise_for_status()
