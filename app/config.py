@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     llm_timeout: int = 1800
     llm_max_tokens: int = 4096
     rss_default_interval_min: int = 15
+    rss_cycle_interval_min: int = 5
     database_url: str = "sqlite:///./smart_stream.db"
 
     model_config = {"env_file": ".env"}
