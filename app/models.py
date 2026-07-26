@@ -17,6 +17,7 @@ class User(Base):
 
     topic_branches = relationship("TopicBranch", back_populates="user")
     feedbacks = relationship("Feedback", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
 
 
 class Source(Base):
@@ -44,6 +45,7 @@ class TopicBranch(Base):
 
     user = relationship("User", back_populates="topic_branches")
     classified_articles = relationship("ClassifiedArticle", back_populates="topic_branch")
+    notifications = relationship("Notification", back_populates="topic_branch")
 
 
 class Article(Base):
@@ -78,6 +80,23 @@ class ClassifiedArticle(Base):
     article = relationship("Article", back_populates="classified_articles")
     topic_branch = relationship("TopicBranch", back_populates="classified_articles")
     feedbacks = relationship("Feedback", back_populates="classified_article")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    topic_branch_id = Column(Integer, ForeignKey("topic_branches.id"), nullable=False)
+    active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="notifications")
+    topic_branch = relationship("TopicBranch", back_populates="notifications")
+
+    __table_args__ = (
+        sqlalchemy.UniqueConstraint("user_id", "topic_branch_id", name="uq_notification_user_topic"),
+    )
 
 
 class Feedback(Base):

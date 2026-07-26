@@ -1,9 +1,8 @@
 __pycache__/
 *.pyc
-*.pyo
-.env
 .venv/
 venv/
+.env
 *.db
 *.sqlite3
 .pytest_cache/
@@ -13,7 +12,6 @@ dist/
 build/
 *.egg-info/
 .qwen/
-FACTS.md
-QWEN.md
-file::memory:*
-data/
+.git/
+.gitignore
+tests/

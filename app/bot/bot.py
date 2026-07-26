@@ -1,0 +1,88 @@
+import logging
+import threading
+
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+
+from app.config import settings
+from app.bot.handlers import (
+    start_handler,
+    topics_handler,
+    add_topic_handler,
+    del_topic_handler,
+    articles_handler,
+    feed_handler,
+    feedback_callback_handler,
+)
+
+logger = logging.getLogger(__name__)
+
+_application: Application | None = None
+_thread: threading.Thread | None = None
+
+
+def _build_application() -> Application:
+    """Build and configure the Telegram bot application."""
+    app = (
+        Application.builder()
+        .token(settings.tg_bot_token)
+        .build()
+    )
+
+    # Command handlers
+    app.add_handler(CommandHandler("start", start_handler))
+    app.add_handler(CommandHandler("topics", topics_handler))
+    app.add_handler(CommandHandler("add_topic", add_topic_handler))
+    app.add_handler(CommandHandler("del_topic", del_topic_handler))
+    app.add_handler(CommandHandler("articles", articles_handler))
+    app.add_handler(CommandHandler("feed", feed_handler))
+
+    # Callback handlers (inline buttons)
+    app.add_handler(CallbackQueryHandler(feedback_callback_handler, pattern=r"^feedback:"))
+
+    return app
+
+
+def start_bot() -> None:
+    """Start the Telegram bot in a background thread."""
+    global _application, _thread
+
+    if not settings.tg_bot_token:
+        logger.warning("TG_BOT_TOKEN not set — Telegram bot disabled")
+        return
+
+    if _application and _thread and _thread.is_alive():
+        logger.info("Telegram bot already running")
+        return
+
+    _application = _build_application()
+
+    def _run() -> None:
+        try:
+            logger.info("Starting Telegram bot polling...")
+            _application.run_polling(drop_pending_updates=True)  # type: ignore[misc]
+        except Exception as e:
+            logger.error(f"Telegram bot error: {e}")
+
+    _thread = threading.Thread(target=_run, daemon=True, name="tg-bot")
+    _thread.start()
+    logger.info("Telegram bot started")
+
+
+def get_bot():
+    """Get the Telegram Bot instance (for use by the scheduler notifier)."""
+    if _application:
+        return _application.bot
+    return None
+
+
+def stop_bot() -> None:
+    """Shutdown the Telegram bot."""
+    global _application
+
+    if _application:
+        try:
+            _application.stop()  # type: ignore[misc]
+            _application.shutdown()  # type: ignore[misc]
+            logger.info("Telegram bot stopped")
+        except Exception as e:
+            logger.error(f"Error stopping Telegram bot: {e}")

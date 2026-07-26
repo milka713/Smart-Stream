@@ -3,7 +3,14 @@ import pytest
 from app.scheduler import scheduler, start_scheduler, stop_scheduler
 
 
+def _ensure_stopped() -> None:
+    """Stop scheduler if left running by a previous test."""
+    if scheduler.running:
+        stop_scheduler()
+
+
 def test_scheduler_start_stop():
+    _ensure_stopped()
     assert not scheduler.running
     start_scheduler()
     assert scheduler.running
@@ -12,6 +19,7 @@ def test_scheduler_start_stop():
 
 
 def test_scheduler_jobs():
+    _ensure_stopped()
     start_scheduler()
     jobs = scheduler.get_jobs()
     assert len(jobs) >= 1

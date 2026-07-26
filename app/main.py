@@ -13,6 +13,7 @@ from app.routers import (
 )
 from app.scheduler import start_scheduler, stop_scheduler
 from app.services.llm import LLMGateway
+from app.bot.bot import start_bot, stop_bot
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,7 +22,9 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     start_scheduler()
+    start_bot()
     yield
+    stop_bot()
     stop_scheduler()
 
 
