@@ -49,14 +49,21 @@ class RSSFetcher:
             raw = getattr(entry, "summary", "")
         return self._strip_html(raw)
 
-    def fetch_source(self, source) -> int:
-        """Fetch a single source, return count of new articles."""
+    def fetch_source(self, source, db = None) -> int:
+        """Fetch a single source, return count of new articles.
+
+        If *db* is passed, the caller owns the session lifecycle.
+        Otherwise a new session is created and closed automatically.
+        """
         feed = self._fetch_feed(source.url)
         if not feed.entries:
             logger.warning(f"No entries in feed {source.url}")
             return 0
 
-        db = SessionLocal()
+        own_session = db is None
+        if own_session:
+            db = SessionLocal()
+
         try:
             article_repo = ArticleRepository(db)
             new_count = 0
@@ -82,12 +89,12 @@ class RSSFetcher:
             db.commit()
             logger.info(f"Fetched {new_count} new articles from {source.url}")
             return new_count
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error(f"Error processing feed {source.url}: {e}")
-            return 0
+            raise
         finally:
-            db.close()
+            if own_session:
+                db.close()
 
     def fetch_all_due(self) -> Dict[str, int]:
         """Fetch all due sources, return {url: new_count} summary."""
@@ -98,7 +105,7 @@ class RSSFetcher:
             results = {}
 
             for source in due_sources:
-                count = self.fetch_source(source)
+                count = self.fetch_source(source, db)
                 results[source.url] = count
                 source_repo.mark_fetched(source)
 

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import threading
 
@@ -56,12 +57,42 @@ def start_bot() -> None:
 
     _application = _build_application()
 
+    async def _async_run() -> None:
+        drop_pending = True
+        while True:
+            try:
+                await _application.initialize()
+                await _application.start()
+                logger.info("Starting Telegram bot polling...")
+                await _application.updater.start_polling(  # type: ignore[union-attr]
+                    drop_pending_updates=drop_pending,
+                    timeout=30,
+                )
+            except Exception as e:
+                logger.warning(f"Bot polling lost ({e}), reconnecting in 5s...")
+                drop_pending = False
+            finally:
+                try:
+                    await _application.updater.stop()  # type: ignore[union-attr]
+                    await _application.stop()  # type: ignore[misc]
+                    await _application.shutdown()  # type: ignore[misc]
+                except Exception:
+                    pass
+                await asyncio.sleep(5)
+
     def _run() -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            logger.info("Starting Telegram bot polling...")
-            _application.run_polling(drop_pending_updates=True)  # type: ignore[misc]
+            loop.run_until_complete(_async_run())
         except Exception as e:
             logger.error(f"Telegram bot error: {e}")
+        finally:
+            try:
+                loop.run_until_complete(_application.shutdown())  # type: ignore[misc]
+            except Exception:
+                pass
+            loop.close()
 
     _thread = threading.Thread(target=_run, daemon=True, name="tg-bot")
     _thread.start()
@@ -75,14 +106,14 @@ def get_bot():
     return None
 
 
-def stop_bot() -> None:
+async def stop_bot() -> None:
     """Shutdown the Telegram bot."""
     global _application
 
     if _application:
         try:
-            _application.stop()  # type: ignore[misc]
-            _application.shutdown()  # type: ignore[misc]
+            await _application.stop()  # type: ignore[misc]
+            await _application.shutdown()  # type: ignore[misc]
             logger.info("Telegram bot stopped")
         except Exception as e:
             logger.error(f"Error stopping Telegram bot: {e}")

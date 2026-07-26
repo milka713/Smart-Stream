@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     start_scheduler()
     start_bot()
     yield
-    stop_bot()
+    await stop_bot()
     stop_scheduler()
 
 
