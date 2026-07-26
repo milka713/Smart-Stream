@@ -14,7 +14,7 @@ class FeedbackCreate(BaseModel):
     user_id: int = 1
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 def submit_feedback(data: FeedbackCreate, db: Session = Depends(get_db)):
     ca = db.query(ClassifiedArticle).filter(
         ClassifiedArticle.article_id == data.article_id

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models import Article
+from app.models import Article, ClassifiedArticle
 
 
 class ArticleRepository:
@@ -36,8 +36,8 @@ class ArticleRepository:
         """Return articles that have no classified_articles yet."""
         return (
             self.db.query(Article)
-            .outerjoin(Article.classified_articles)
-            .filter(Article.classified_articles.any().not_())
+            .outerjoin(ClassifiedArticle)
+            .filter(ClassifiedArticle.id.is_(None))
             .limit(limit)
             .all()
         )

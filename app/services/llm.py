@@ -69,6 +69,7 @@ class LLMGateway:
         for attempt in range(MAX_RETRIES):
             try:
                 response = self._client.chat.completions.create(
+                    model="llama",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=settings.llm_max_tokens,
                     temperature=0.6,
